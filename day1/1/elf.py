@@ -12,4 +12,5 @@ for line in sys.stdin:
         current_elf += int(line)
 elves.append(current_elf)
 
-print(max(*elves))
+print(f"Max: {max(*elves)}")
+print(f"Top 3: {sum(sorted(elves)[-3:])}")
