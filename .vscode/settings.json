@@ -1,0 +1,13 @@
+{
+    "rust-analyzer.checkOnSave.command": "clippy",
+    "rust-analyzer.checkOnSave.overrideCommand": [
+      "cargo",
+      "clippy",
+      "--fix",
+      "--workspace",
+      "--message-format=json",
+      "--all-targets",
+      "--allow-staged",
+      "--allow-dirty"
+    ],
+}
