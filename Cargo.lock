@@ -10,6 +10,167 @@ dependencies = [
 ]
 
 [[package]]
+name = "day10"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day11"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day12"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day13"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day14"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day15"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day16"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day17"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day18"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day19"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day2"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day20"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day21"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day22"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day23"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day24"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day3"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day4"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day5"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day6"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day7"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day8"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "day9"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
 name = "eyre"
 version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
