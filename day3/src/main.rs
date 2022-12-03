@@ -1,4 +1,7 @@
-use std::{io::{self, BufRead}, collections::BTreeSet};
+use std::{
+    collections::BTreeSet,
+    io::{self, BufRead},
+};
 
 fn byte_to_priority(item: &u8) -> eyre::Result<i32> {
     let item_as_char = char::from(*item);
@@ -13,29 +16,34 @@ fn byte_to_priority(item: &u8) -> eyre::Result<i32> {
 
 fn to_item_priority_set(item: &str) -> eyre::Result<BTreeSet<i32>> {
     item
-    // Stream as bytes.
-    .as_bytes()
-    .iter()
-    // Convert byte value to priority
-    .map(byte_to_priority)
-    .collect()
+        // Stream as bytes.
+        .as_bytes()
+        .iter()
+        // Convert byte value to priority
+        .map(byte_to_priority)
+        .collect()
 }
-
 
 fn main() -> eyre::Result<()> {
     let mut priority_sum = 0;
+    let mut current_group = Vec::new();
     for line in io::stdin().lock().lines() {
         let line = line?;
-        if line.len() % 2 != 0 {
-            return Err(eyre::eyre!("Line isn't an even length: {}", line))
+        let items = to_item_priority_set(&line)?;
+        current_group.push(items);
+        if current_group.len() == 3 {
+            let intersection = current_group
+                .iter()
+                .skip(1)
+                .fold(current_group[0].clone(), |acc, hs| {
+                    acc.intersection(hs).cloned().collect()
+                });
+            if intersection.len() != 1 {
+                return Err(eyre::eyre!("Unexpected intersection {:?}", intersection));
+            }
+            priority_sum += intersection.iter().next().unwrap();
+            current_group.clear();
         }
-        let large_compartment = to_item_priority_set(&line[0 .. line.len() / 2])?;
-        let small_compartment = to_item_priority_set(&line[line.len() / 2 .. line.len()])?;
-        let difference: Vec<_> = large_compartment.intersection(&small_compartment).collect();
-        if difference.len() != 1 {
-            return Err(eyre::eyre!("Unexpected difference length {:?} of '{:?}' vs '{:?}'", difference, large_compartment, small_compartment))
-        }
-        priority_sum += difference[0];
     }
     println!("Priority sum: {}", priority_sum);
     Ok(())
