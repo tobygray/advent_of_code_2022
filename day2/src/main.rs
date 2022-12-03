@@ -9,21 +9,21 @@ enum Throw {
     Scissors
 }
 
-fn line_to_throws(line: &str) -> eyre::Result<(Throw, Throw)> {
-    let (them, us) = line.split_at(line.find(' ').ok_or_else(|| eyre!("Invalid input"))?);
+fn line_to_throws(line: &str) -> eyre::Result<(GameResult, Throw)> {
+    let (them, game_result) = line.split_at(line.find(' ').ok_or_else(|| eyre!("Invalid input"))?);
     let them = match them {
         "A" => Throw::Rock,
         "B" => Throw::Paper,
         "C" => Throw::Scissors,
-        _ => return Err(eyre!("Unexpected input for us {}", them)),
+        _ => return Err(eyre!("Unexpected input for them {}", them)),
         };
-    let us = match us {
-        " X" => Throw::Rock,
-        " Y" => Throw::Paper,
-        " Z" => Throw::Scissors,
-        _ => return Err(eyre!("Unexpected input for them {}", us)),
+    let game_result = match game_result {
+        " X" => GameResult::Loss,
+        " Y" => GameResult::Draw,
+        " Z" => GameResult::Win,
+        _ => return Err(eyre!("Unexpected input for game result {}", game_result)),
     };
-    Ok((us, them))
+    Ok((game_result, them))
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -33,22 +33,22 @@ enum GameResult {
     Draw
 }
 
-fn get_game_result(us: Throw, them: Throw) -> GameResult {
-    match us {
-        Throw::Paper => match them {
-            Throw::Paper => GameResult::Draw,
-            Throw::Rock => GameResult::Win,
-            Throw::Scissors => GameResult::Loss,
+fn get_our_move(game_result: GameResult, them: Throw) -> Throw {
+    match them {
+        Throw::Paper => match game_result {
+            GameResult::Loss => Throw::Rock,
+            GameResult::Draw => Throw::Paper,
+            GameResult::Win => Throw::Scissors,
         },
-        Throw::Rock => match them {
-            Throw::Paper => GameResult::Loss,
-            Throw::Rock => GameResult::Draw,
-            Throw::Scissors => GameResult::Win,
+        Throw::Rock => match game_result {
+            GameResult::Loss => Throw::Scissors,
+            GameResult::Draw => Throw::Rock,
+            GameResult::Win => Throw::Paper,
         },
-        Throw::Scissors => match them {
-            Throw::Paper => GameResult::Win,
-            Throw::Rock => GameResult::Loss,
-            Throw::Scissors => GameResult::Draw,
+        Throw::Scissors => match game_result {
+            GameResult::Loss => Throw::Paper,
+            GameResult::Draw => Throw::Scissors,
+            GameResult::Win => Throw::Rock,
         }
     }
 }
@@ -59,8 +59,8 @@ fn main() -> eyre::Result<()> {
     for line in io::stdin().lock().lines() {
         let line = line?;
         let _line = line.trim();
-        let (us, them) = line_to_throws(&line)?;
-        let result = get_game_result(us, them);
+        let (result, them) = line_to_throws(&line)?;
+        let us = get_our_move(result, them);
         let score = match result {
             GameResult::Win => 6,
             GameResult::Draw => 3,
