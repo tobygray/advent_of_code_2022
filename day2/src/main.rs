@@ -58,7 +58,6 @@ fn main() -> eyre::Result<()> {
     let mut total_score = 0;
     for line in io::stdin().lock().lines() {
         let line = line?;
-        let _line = line.trim();
         let (result, them) = line_to_throws(&line)?;
         let us = get_our_move(result, them);
         let score = match result {
