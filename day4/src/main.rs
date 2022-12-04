@@ -16,12 +16,24 @@ fn line_to_ranges(line: &str) -> eyre::Result<((i32, i32), (i32, i32))> {
     Ok((elf1, elf2))
 }
 
+fn contains(range1: (i32, i32), range2: (i32, i32)) -> bool {
+    range1.0 >= range2.0 && range1.1 <= range2.1
+}
+
+fn overlaps(range1: (i32, i32), range2: (i32, i32)) -> bool {
+    (range1.0 >= range2.0 && range1.0 <= range2.1) || (range1.1 >= range2.0 && range1.1 <= range2.1)
+}
+
 fn main() -> eyre::Result<()> {
     let mut sum = 0;
     for line in io::stdin().lock().lines() {
         let line = line?;
         let (elf1, elf2) = line_to_ranges(&line)?;
-        if (elf1.0 >= elf2.0 && elf1.1 <= elf2.1) || (elf2.0 >= elf1.0 && elf2.1 <= elf1.1) {
+        if contains(elf1, elf2)
+            || contains(elf2, elf1)
+            || overlaps(elf1, elf2)
+            || overlaps(elf2, elf1)
+        {
             sum += 1;
         }
     }
