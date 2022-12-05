@@ -32,7 +32,6 @@ fn main() -> eyre::Result<()> {
         for crate_to_move in from.drain(from.len() - count..from.len()) {
             crates.push(crate_to_move);
         }
-        crates.reverse();
         let to = &mut crate_stacks[to - 1];
         to.append(&mut crates)
     }
