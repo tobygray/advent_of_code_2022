@@ -6,7 +6,7 @@ use eyre::eyre;
 enum Throw {
     Rock,
     Paper,
-    Scissors
+    Scissors,
 }
 
 fn line_to_throws(line: &str) -> eyre::Result<(GameResult, Throw)> {
@@ -16,7 +16,7 @@ fn line_to_throws(line: &str) -> eyre::Result<(GameResult, Throw)> {
         "B" => Throw::Paper,
         "C" => Throw::Scissors,
         _ => return Err(eyre!("Unexpected input for them {}", them)),
-        };
+    };
     let game_result = match game_result {
         " X" => GameResult::Loss,
         " Y" => GameResult::Draw,
@@ -30,7 +30,7 @@ fn line_to_throws(line: &str) -> eyre::Result<(GameResult, Throw)> {
 enum GameResult {
     Win,
     Loss,
-    Draw
+    Draw,
 }
 
 fn get_our_move(game_result: GameResult, them: Throw) -> Throw {
@@ -49,10 +49,9 @@ fn get_our_move(game_result: GameResult, them: Throw) -> Throw {
             GameResult::Loss => Throw::Paper,
             GameResult::Draw => Throw::Scissors,
             GameResult::Win => Throw::Rock,
-        }
+        },
     }
 }
-
 
 fn main() -> eyre::Result<()> {
     let mut total_score = 0;
@@ -63,7 +62,7 @@ fn main() -> eyre::Result<()> {
         let score = match result {
             GameResult::Win => 6,
             GameResult::Draw => 3,
-            GameResult::Loss => 0
+            GameResult::Loss => 0,
         } + match us {
             Throw::Rock => 1,
             Throw::Paper => 2,

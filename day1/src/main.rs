@@ -18,6 +18,9 @@ fn main() -> eyre::Result<()> {
     elves.push(current_elf);
     elves.sort();
     println!("Max: {0}", elves.iter().max().unwrap());
-    println!("Top 3: {0}", elves[elves.len() - 3 .. elves.len()].iter().sum::<i32>());
+    println!(
+        "Top 3: {0}",
+        elves[elves.len() - 3..elves.len()].iter().sum::<i32>()
+    );
     Ok(())
 }
