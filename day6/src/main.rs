@@ -1,19 +1,21 @@
 use std::{io::{self, BufRead}, collections::{VecDeque, BTreeSet}};
 
+const HEADER_LENGTH: usize = 14;
+
 fn find_unique_offset(bytes: &[u8]) -> eyre::Result<usize> {
     let mut last = VecDeque::new();
     for (idx, byte) in bytes.iter().enumerate() {
-        if last.len() < 3 {
+        if last.len() < HEADER_LENGTH - 1 {
             last.push_back(byte);
             continue;
         }
         last.push_back(byte);
-        if last.len() > 4 {
+        if last.len() > HEADER_LENGTH {
             last.pop_front();
         }
-        assert!(last.len() == 4);
+        assert!(last.len() == HEADER_LENGTH);
         let byte_set: BTreeSet<_> = last.iter().collect();
-        if byte_set.len() == 4 {
+        if byte_set.len() == HEADER_LENGTH {
             return Ok(idx + 1)
         }
     }
