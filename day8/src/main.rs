@@ -7,15 +7,19 @@ struct Tree {
 
 impl Tree {
     fn new(height: i32) -> Tree {
-        Tree{
+        Tree {
             height,
-            visible: false
+            visible: false,
         }
     }
 }
 
 fn line_to_row(line: &str) -> eyre::Result<Vec<Tree>> {
-    let row: Vec<_> = line.as_bytes().iter().map(|b| Tree::new(*b as i32)).collect();
+    let row: Vec<_> = line
+        .as_bytes()
+        .iter()
+        .map(|b| Tree::new(*b as i32))
+        .collect();
     Ok(row)
 }
 
@@ -29,7 +33,6 @@ fn score_row(trees: &[Vec<Tree>], row: usize, column: usize, dir: i32) -> i32 {
             break;
         }
         current_idx += dir;
-
     }
     column.abs_diff(current_idx as usize) as i32
 }
@@ -44,7 +47,6 @@ fn score_column(trees: &[Vec<Tree>], row: usize, column: usize, dir: i32) -> i32
             break;
         }
         current_idx += dir;
-
     }
     row.abs_diff(current_idx as usize) as i32
 }
@@ -60,21 +62,21 @@ fn main() -> eyre::Result<()> {
     for row in trees.iter_mut() {
         let mut max_height = -1;
         for mut tree in row.iter_mut() {
-            if tree.height> max_height {
+            if tree.height > max_height {
                 tree.visible = true;
                 max_height = tree.height;
             }
         }
         max_height = -1;
         for mut tree in row.iter_mut().rev() {
-            if tree.height> max_height {
+            if tree.height > max_height {
                 tree.visible = true;
                 max_height = tree.height;
             }
         }
     }
     // Work out the visibility for each tree by column.
-    for column in 0 .. trees[0].len() {
+    for column in 0..trees[0].len() {
         let mut max_height = -1;
         for row in trees.iter_mut() {
             let tree = &mut row[column];
@@ -93,12 +95,15 @@ fn main() -> eyre::Result<()> {
         }
     }
 
-    let sum: usize = trees.iter().map(|r| r.iter().filter(|t| t.visible).count()).sum();
+    let sum: usize = trees
+        .iter()
+        .map(|r| r.iter().filter(|t| t.visible).count())
+        .sum();
     println!("Sum of trees: {}", sum);
 
     let mut max_scenic_score = -1;
-    for row in 0 .. trees.len() {
-        for column in 0 .. trees[row].len() {
+    for row in 0..trees.len() {
+        for column in 0..trees[row].len() {
             let score_left = score_row(&trees, row, column, -1);
             let score_right = score_row(&trees, row, column, 1);
             let score_up = score_column(&trees, row, column, -1);

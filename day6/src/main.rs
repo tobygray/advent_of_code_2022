@@ -1,4 +1,7 @@
-use std::{io::{self, BufRead}, collections::{VecDeque, BTreeSet}};
+use std::{
+    collections::{BTreeSet, VecDeque},
+    io::{self, BufRead},
+};
 
 const HEADER_LENGTH: usize = 14;
 
@@ -16,7 +19,7 @@ fn find_unique_offset(bytes: &[u8]) -> eyre::Result<usize> {
         assert!(last.len() == HEADER_LENGTH);
         let byte_set: BTreeSet<_> = last.iter().collect();
         if byte_set.len() == HEADER_LENGTH {
-            return Ok(idx + 1)
+            return Ok(idx + 1);
         }
     }
     Err(eyre::eyre!("Failed to find start"))
