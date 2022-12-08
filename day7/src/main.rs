@@ -56,6 +56,22 @@ fn get_sum(dir: &Directory, limit: usize) -> usize {
     dir_sum
 }
 
+fn find_smallest(dir: &Directory, minimum_size: usize) -> Option<usize> {
+    let this_size = dir.get_total_size();
+    if this_size < minimum_size {
+        return None;
+    }
+    let mut smallest = Some(this_size);
+    for child_dir in dir.child_dirs.values() {
+        if let Some(s) = find_smallest(child_dir, minimum_size) {
+            if Some(s) < smallest {
+                smallest = Some(s)
+            }
+        }
+    }
+    smallest
+}
+
 fn main() -> eyre::Result<()> {
     let mut root = Directory::new();
     let mut current_path = VecDeque::<String>::new();
@@ -100,5 +116,16 @@ fn main() -> eyre::Result<()> {
     let sum = get_sum(&root, size_limit);
 
     println!("Sum of dirs < {} is {}", size_limit, sum);
+
+    let fs_size = 70000000;
+    let free_space_needed = 30000000;
+    let current_free_space = fs_size - root.get_total_size();
+    let extra_free_needed = free_space_needed - current_free_space;
+
+    println!(
+        "Can free: {}",
+        find_smallest(&root, extra_free_needed).unwrap()
+    );
+
     Ok(())
 }
