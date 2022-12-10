@@ -27,9 +27,8 @@ fn line_to_move(line: &str) -> eyre::Result<(Direction, i32)> {
 
 fn main() -> eyre::Result<()> {
     let mut tail_positions = BTreeSet::<(i32, i32)>::new();
-    let mut head_pos = (0, 0);
-    let mut tail_pos = (0, 0);
-    tail_positions.insert(tail_pos);
+    let mut knots: Vec<(i32, i32)> = (0..10).map(|_| (0, 0)).collect();
+    tail_positions.insert(knots[knots.len() - 1]);
     for line in io::stdin().lock().lines() {
         let line = line?;
         let (direction, count) = line_to_move(&line)?;
@@ -40,27 +39,29 @@ fn main() -> eyre::Result<()> {
             Direction::Right => (1, 0),
         };
         for _ in 0..count {
-            head_pos = (head_pos.0 + delta.0, head_pos.1 + delta.1);
-            if tail_pos.0 < head_pos.0 - 1
-                || tail_pos.0 > head_pos.0 + 1
-                || tail_pos.1 < head_pos.1 - 1
-                || tail_pos.1 > head_pos.1 + 1
-            {
-                // Tail needs to move closer to the head.
-                if tail_pos.0 > head_pos.0 {
-                    tail_pos.0 -= 1;
-                }
-                if tail_pos.0 < head_pos.0 {
-                    tail_pos.0 += 1;
-                }
-                if tail_pos.1 > head_pos.1 {
-                    tail_pos.1 -= 1;
-                }
-                if tail_pos.1 < head_pos.1 {
-                    tail_pos.1 += 1;
+            knots[0] = (knots[0].0 + delta.0, knots[0].1 + delta.1);
+            for i in 1..knots.len() {
+                if knots[i].0 < knots[i - 1].0 - 1
+                    || knots[i].0 > knots[i - 1].0 + 1
+                    || knots[i].1 < knots[i - 1].1 - 1
+                    || knots[i].1 > knots[i - 1].1 + 1
+                {
+                    // Tail needs to move closer to the head.
+                    if knots[i].0 > knots[i - 1].0 {
+                        knots[i].0 -= 1;
+                    }
+                    if knots[i].0 < knots[i - 1].0 {
+                        knots[i].0 += 1;
+                    }
+                    if knots[i].1 > knots[i - 1].1 {
+                        knots[i].1 -= 1;
+                    }
+                    if knots[i].1 < knots[i - 1].1 {
+                        knots[i].1 += 1;
+                    }
                 }
             }
-            tail_positions.insert(tail_pos);
+            tail_positions.insert(knots[knots.len() - 1]);
         }
     }
     println!("Total unique tail positions: {}", tail_positions.len());
