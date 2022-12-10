@@ -19,8 +19,16 @@ fn line_to_instruction(line: &str) -> eyre::Result<Instruction> {
 }
 
 fn check_signal(cycle: i32, x: i32) -> i32 {
+    let offset = (cycle - 1) % 40;
+    if x - 1 <= offset && x + 1 >= offset {
+        print!("#");
+    } else {
+        print!(".");
+    }
+    if offset == 39 {
+        println!();
+    }
     if [20, 60, 100, 140, 180, 220].contains(&cycle) {
-        println!("Signal at {}: {}", cycle, cycle * x);
         cycle * x
     } else {
         0
@@ -31,6 +39,7 @@ fn main() -> eyre::Result<()> {
     let mut sum = 0;
     let mut cycle = 1;
     let mut x = 1;
+    check_signal(cycle, x);
     for line in io::stdin().lock().lines() {
         let line = line?;
         match line_to_instruction(&line)? {
