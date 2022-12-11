@@ -2,13 +2,13 @@ use std::{io::{self, BufRead}, collections::VecDeque};
 
 #[derive(Debug)]
 enum MonkeyOperation {
-    Multiply(i32),
-    Add(i32),
+    Multiply(u64),
+    Add(u64),
     Square,
 }
 
 impl MonkeyOperation {
-    fn apply(&self, value: i32) -> i32 {
+    fn apply(&self, value: u64) -> u64 {
         match self {
             MonkeyOperation::Add(a) => value + a,
             MonkeyOperation::Multiply(m) => value * m,
@@ -19,12 +19,12 @@ impl MonkeyOperation {
 
 #[derive(Debug)]
 struct Monkey {
-    items: VecDeque<i32>,
+    items: VecDeque<u64>,
     operation: MonkeyOperation,
-    modulus: i32,
-    if_true: i32,
-    if_false: i32,
-    total_item_count: i32,
+    modulus: u64,
+    if_true: usize,
+    if_false: usize,
+    total_item_count: u64,
 }
 
 const STARTING_ITEMS_PREFIX: &str = "  Starting items: ";
@@ -47,7 +47,7 @@ fn lines_to_monkey(lines: &mut Vec<String>) -> eyre::Result<Option<Monkey>> {
     }
     let items: VecDeque<_> = lines[1][STARTING_ITEMS_PREFIX.len()..]
         .split(", ")
-        .map(|s| s.parse::<i32>().unwrap())
+        .map(|s| s.parse::<u64>().unwrap())
         .collect();
     let operation = if lines[2] == SQUARE_OP {
         MonkeyOperation::Square
@@ -86,13 +86,15 @@ fn main() -> eyre::Result<()> {
         }
     }
     println!("Read {} monkeys", monkeys.len());
-    for r in 0..20 {
+    let total_mod: u64 = monkeys.iter().map(|m| m.modulus).product();
+    println!("total mod: {}", total_mod);
+    for r in 0..10000 {
         println!("Round {}", r + 1);
         for idx in 0..monkeys.len() {
             while !monkeys[idx].items.is_empty() {
                 monkeys[idx].total_item_count += 1;
                 let item = monkeys[idx].items.pop_front().unwrap();
-                let item = monkeys[idx].operation.apply(item) / 3;
+                let item = monkeys[idx].operation.apply(item) % total_mod;
                 let next_idx = if item % monkeys[idx].modulus == 0 {
                     monkeys[idx].if_true
                 } else {
