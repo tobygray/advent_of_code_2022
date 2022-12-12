@@ -1,4 +1,7 @@
-use std::{io::{self, BufRead}, collections::VecDeque};
+use std::{
+    collections::VecDeque,
+    io::{self, BufRead},
+};
 
 #[derive(Debug)]
 enum MonkeyOperation {
@@ -104,9 +107,14 @@ fn main() -> eyre::Result<()> {
             }
         }
     }
-    let mut total_item_counts:Vec<_> = monkeys.iter().map(|m| m.total_item_count).collect();
+    let mut total_item_counts: Vec<_> = monkeys.iter().map(|m| m.total_item_count).collect();
     total_item_counts.sort();
     total_item_counts.reverse();
-    println!("Top two monkeys {} and {}: {}", total_item_counts[0], total_item_counts[1], total_item_counts[0] * total_item_counts[1]);
+    println!(
+        "Top two monkeys {} and {}: {}",
+        total_item_counts[0],
+        total_item_counts[1],
+        total_item_counts[0] * total_item_counts[1]
+    );
     Ok(())
 }
