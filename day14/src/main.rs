@@ -11,7 +11,7 @@ fn coordinate_to_tuple(coord: &str) -> eyre::Result<(usize, usize)> {
     let (x, y) = coord
         .split_once(',')
         .ok_or_else(|| eyre::eyre!("Unexpected coordinate: {coord}"))?;
-    Ok((x.parse::<usize>()? - 400, y.parse()?))
+    Ok((x.parse::<usize>()? - (500 - WORLD_WIDTH / 2), y.parse()?))
 }
 
 fn draw_rock_line(
@@ -55,14 +55,14 @@ fn add_rock_from_line(line: &str, world: &mut [Vec<Block>]) -> eyre::Result<()> 
     Ok(())
 }
 
-const WORLD_HEIGHT: usize = 300;
-const WORLD_WIDTH: usize = 200;
+const WORLD_HEIGHT: usize = 400;
+const WORLD_WIDTH: usize = 400;
 
 fn add_sand(world: &mut [Vec<Block>]) -> eyre::Result<bool> {
-    let mut x = 100;
+    let mut x = WORLD_WIDTH / 2;
     let mut y = 0;
     if world[x][y] != Block::Air {
-        return Err(eyre::eyre!("Unable to add sand as output is blocked"));
+        return Ok(false);
     }
     while y < (WORLD_HEIGHT - 1) {
         if world[x][y + 1] == Block::Air {
@@ -83,7 +83,23 @@ fn add_sand(world: &mut [Vec<Block>]) -> eyre::Result<bool> {
         }
     }
     // Sand fell off the world.
-    Ok(false)
+    Err(eyre::eyre!("Sand fell off the world!"))
+}
+
+fn find_lowest_rock(world: &[Vec<Block>]) -> eyre::Result<usize> {
+    let mut lowest = 0;
+    for column in world {
+        for (i, b) in column.iter().enumerate() {
+            if *b == Block::Rock && i > lowest {
+                lowest = i;
+            }
+        }
+    }
+    if lowest == 0 {
+        Err(eyre::eyre!("No rock found!"))
+    } else {
+        Ok(lowest)
+    }
 }
 
 fn main() -> eyre::Result<()> {
@@ -93,6 +109,14 @@ fn main() -> eyre::Result<()> {
         let line = line?;
         add_rock_from_line(&line, &mut world)?;
     }
+    // Add the infinite rock layer.
+    let lowest_rock = find_lowest_rock(&world)?;
+    draw_rock_line(
+        (0, lowest_rock + 2),
+        (WORLD_WIDTH - 1, lowest_rock + 2),
+        &mut world,
+    )?;
+    // Start pouring sand!
     let mut sand_added = 0;
     while add_sand(&mut world)? {
         sand_added += 1;
