@@ -1,5 +1,4 @@
 use std::{
-    collections::BTreeSet,
     env,
     io::{self, BufRead},
 };
@@ -36,18 +35,6 @@ fn line_to_sensor(line: &str) -> eyre::Result<Sensor> {
     }
 }
 
-fn impossible_positions(sensor: &Sensor, row: i32) -> eyre::Result<Option<Vec<i32>>> {
-    let height_from_beacon = sensor.position.1.abs_diff(row);
-    let total_distance = sensor.distance_from_beacon();
-    if height_from_beacon >= total_distance {
-        return Ok(None);
-    }
-    let row_distance = total_distance - height_from_beacon;
-    let center = sensor.position.0;
-    let start = center - row_distance as i32;
-    let end = center + row_distance as i32;
-    Ok(Some((start..end).collect()))
-}
 
 fn main() -> eyre::Result<()> {
     let mut sensors = Vec::<Sensor>::new();
@@ -56,28 +43,39 @@ fn main() -> eyre::Result<()> {
         let line = line?;
         sensors.push(line_to_sensor(&line)?)
     }
+    // Sort by the x value - might help with the later embedded X loop...
+    sensors.sort_by_key(|s| s.position.0);
     // Read the row.
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         return Err(eyre::eyre!(
-            "Not enough arguments - provide the row id as an argument"
+            "Not enough arguments - provide the max dimension as an argument"
         ));
     }
-    let row: i32 = args[1].parse()?;
-    let impossible_position_rows: eyre::Result<Vec<_>> = sensors
-        .iter()
-        .map(|s| impossible_positions(s, row))
-        .collect();
-    let binding: Vec<_> = impossible_position_rows?
-        .iter()
-        .filter_map(|x| x.clone())
-        .collect();
-    let impossible_position_rows: Vec<BTreeSet<_>> =
-        binding.iter().map(|v| v.iter().collect()).collect();
-    let impossible_position_rows: BTreeSet<_> = impossible_position_rows
-        .iter()
-        .fold(BTreeSet::new(), |a, b| a.union(b).cloned().collect());
-    let impossible_count = impossible_position_rows.len();
-    println!("Row {row} has {impossible_count} impossible positions");
+    let max: usize = args[1].parse()?;
+    for j in 0.. max + 1 {
+        let mut i = 0;
+        while i <= max as i32 {
+            let x = i as i32;
+            for sensor in &sensors {
+                let distance_from_beacon = sensor.distance_from_beacon();
+                let row_distance = sensor.position.1.abs_diff(j as i32);
+                if row_distance > distance_from_beacon {
+                    continue;
+                }
+                let x_width = (distance_from_beacon - row_distance) as i32;
+                let start_impossible_x = sensor.position.0 - x_width;
+                let end_impossible_x = sensor.position.0 + x_width;
+                if i >= start_impossible_x && i <= end_impossible_x {
+                    i = end_impossible_x + 1;
+                    break;
+                }
+            }
+            if x == i as i32 {
+                println!("Frequency: {}", (x as u64 * 4000000) + (j as u64));
+                return Ok(())
+            }
+        }
+    }
     Ok(())
 }
