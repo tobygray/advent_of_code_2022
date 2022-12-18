@@ -35,7 +35,6 @@ fn line_to_sensor(line: &str) -> eyre::Result<Sensor> {
     }
 }
 
-
 fn main() -> eyre::Result<()> {
     let mut sensors = Vec::<Sensor>::new();
     // Read the sensors.
@@ -53,7 +52,7 @@ fn main() -> eyre::Result<()> {
         ));
     }
     let max: usize = args[1].parse()?;
-    for j in 0.. max + 1 {
+    for j in 0..max + 1 {
         let mut i = 0;
         while i <= max as i32 {
             let x = i as i32;
@@ -73,7 +72,7 @@ fn main() -> eyre::Result<()> {
             }
             if x == i as i32 {
                 println!("Frequency: {}", (x as u64 * 4000000) + (j as u64));
-                return Ok(())
+                return Ok(());
             }
         }
     }

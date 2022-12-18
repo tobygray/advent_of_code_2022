@@ -6,3 +6,4 @@ edition = "2021"
 
 [dependencies]
 eyre = "0.6.8"
+regex = "1.7.0"
