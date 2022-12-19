@@ -90,32 +90,31 @@ fn walk_options(state: &mut WalkState) {
         }
         return;
     }
-    let valves_to_open = state.valves_to_open.clone();
-    for valve_to_open in valves_to_open {
+    for valve_to_open in state.valves_to_open {
         if valve_to_open == state.current_valve {
             // Open this valve, and tick on time by one step.
-        let new_flow = state.current_flow + state.current_rate;
-        let new_rate =
-            state.current_rate + state.valve_map.flow_rates.get(state.current_valve).unwrap();
-        let mut new_valves_to_open = state.valves_to_open.clone();
-        new_valves_to_open.remove(state.current_valve);
-        walk_options(&mut WalkState {
-            valve_map: state.valve_map,
-            routes: state.routes,
-            current_valve: state.current_valve,
-            time_limit: state.time_limit - 1,
-            current_flow: new_flow,
-            max_flow_so_far: state.max_flow_so_far,
-            current_rate: new_rate,
-            valves_to_open: &new_valves_to_open,
-        });
-            continue;
+            let new_flow = state.current_flow + state.current_rate;
+            let new_rate =
+                state.current_rate + state.valve_map.flow_rates.get(state.current_valve).unwrap();
+            let mut new_valves_to_open = state.valves_to_open.clone();
+            new_valves_to_open.remove(state.current_valve);
+            walk_options(&mut WalkState {
+                valve_map: state.valve_map,
+                routes: state.routes,
+                current_valve: state.current_valve,
+                time_limit: state.time_limit - 1,
+                current_flow: new_flow,
+                max_flow_so_far: state.max_flow_so_far,
+                current_rate: new_rate,
+                valves_to_open: &new_valves_to_open,
+            });
+            return;
         }
         let route_length = state
             .routes
             .get(state.current_valve)
             .unwrap()
-            .get(&valve_to_open)
+            .get(valve_to_open)
             .unwrap();
         if *route_length >= state.time_limit {
             // Can't get to the valve and open it within time limit, so give up here.
@@ -127,7 +126,7 @@ fn walk_options(state: &mut WalkState) {
             walk_options(&mut WalkState {
                 valve_map: state.valve_map,
                 routes: state.routes,
-                current_valve: &valve_to_open,
+                current_valve: valve_to_open,
                 time_limit: state.time_limit - route_length,
                 current_flow: state.current_flow + (state.current_rate * route_length),
                 max_flow_so_far: state.max_flow_so_far,
