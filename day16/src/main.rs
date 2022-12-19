@@ -71,6 +71,7 @@ struct WalkState<'a> {
     time_limit: u32,
     current_flow: u32,
     current_rate: u32,
+    max_rate: u32,
     max_flow_so_far: &'a mut u32,
     valves_to_open: &'a BTreeSet<String>,
 }
@@ -90,6 +91,10 @@ fn walk_options(state: &mut WalkState) {
         }
         return;
     }
+    if state.current_flow + (state.max_rate * state.time_limit) < *state.max_flow_so_far {
+        // Not possible to better current max, so abort early.
+        return;
+    }
     for valve_to_open in state.valves_to_open {
         if valve_to_open == state.current_valve {
             // Open this valve, and tick on time by one step.
@@ -106,6 +111,7 @@ fn walk_options(state: &mut WalkState) {
                 current_flow: new_flow,
                 max_flow_so_far: state.max_flow_so_far,
                 current_rate: new_rate,
+                max_rate: state.max_rate,
                 valves_to_open: &new_valves_to_open,
             });
             return;
@@ -131,6 +137,7 @@ fn walk_options(state: &mut WalkState) {
                 current_flow: state.current_flow + (state.current_rate * route_length),
                 max_flow_so_far: state.max_flow_so_far,
                 current_rate: state.current_rate,
+                max_rate: state.max_rate,
                 valves_to_open: state.valves_to_open,
             })
         }
@@ -155,6 +162,7 @@ fn main() -> eyre::Result<()> {
         time_limit,
         current_flow: 0,
         current_rate: 0,
+        max_rate: valve_map.flow_rates.values().sum(),
         max_flow_so_far: &mut max_flow_so_far,
         valves_to_open: &valves_to_open,
     };
