@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap},
     io::{self, BufRead},
 };
 
@@ -73,7 +73,7 @@ struct WalkState<'a> {
     current_rate: u32,
     max_rate: u32,
     max_flow_so_far: &'a mut u32,
-    valves_to_open: &'a BTreeSet<String>,
+    valves_to_open: &'a Vec<String>,
 }
 
 fn walk_options(state: &mut WalkState) {
@@ -95,14 +95,14 @@ fn walk_options(state: &mut WalkState) {
         // Not possible to better current max, so abort early.
         return;
     }
-    for valve_to_open in state.valves_to_open {
+    for (i, valve_to_open) in state.valves_to_open.iter().enumerate() {
         if valve_to_open == state.current_valve {
             // Open this valve, and tick on time by one step.
             let new_flow = state.current_flow + state.current_rate;
             let new_rate =
                 state.current_rate + state.valve_map.flow_rates.get(state.current_valve).unwrap();
             let mut new_valves_to_open = state.valves_to_open.clone();
-            new_valves_to_open.remove(state.current_valve);
+            new_valves_to_open.remove(i);
             walk_options(&mut WalkState {
                 valve_map: state.valve_map,
                 routes: state.routes,
@@ -149,7 +149,7 @@ fn main() -> eyre::Result<()> {
     let routes = map_routes(&valve_map)?;
     let time_limit = 30;
     let mut max_flow_so_far = 0;
-    let valves_to_open: BTreeSet<String> = valve_map
+    let valves_to_open: Vec<String> = valve_map
         .flow_rates
         .iter()
         .filter(|(_, f)| **f > 0)
