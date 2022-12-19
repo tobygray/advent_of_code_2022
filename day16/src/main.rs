@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap},
+    collections::BTreeMap,
     io::{self, BufRead},
 };
 
@@ -155,18 +155,20 @@ fn main() -> eyre::Result<()> {
         .filter(|(_, f)| **f > 0)
         .map(|(v, _)| v.to_owned())
         .collect();
-    let valve_combinations: Vec<(Vec<_>, Vec<_>)> = (0..2usize.pow(valves_to_open.len() as u32)).map(|i| {
-        let mut lhs = Vec::new();
-        let mut rhs = Vec::new();
-        for (t, v) in valves_to_open.iter().enumerate() {
-            if (i >> t) %2 == 1 {
-                lhs.push(v);
-            } else {
-                rhs.push(v);
+    let valve_combinations: Vec<(Vec<_>, Vec<_>)> = (0..2usize.pow(valves_to_open.len() as u32))
+        .map(|i| {
+            let mut lhs = Vec::new();
+            let mut rhs = Vec::new();
+            for (t, v) in valves_to_open.iter().enumerate() {
+                if (i >> t) % 2 == 1 {
+                    lhs.push(v);
+                } else {
+                    rhs.push(v);
+                }
             }
-        }
-        (lhs, rhs)
-    }).collect();
+            (lhs, rhs)
+        })
+        .collect();
     let mut max_flow_so_far = 0;
     for (lhs, rhs) in valve_combinations {
         let mut lhs_max_flow_so_far = 0;
@@ -180,10 +182,9 @@ fn main() -> eyre::Result<()> {
             max_rate: valve_map.flow_rates.values().sum(),
             max_flow_so_far: &mut lhs_max_flow_so_far,
             valves_to_open: &lhs,
-    
         });
         let mut rhs_max_flow_so_far = 0;
-        walk_options(&mut WalkState{
+        walk_options(&mut WalkState {
             valve_map: &valve_map,
             routes: &routes,
             current_valve: "AA",
