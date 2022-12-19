@@ -73,7 +73,7 @@ struct WalkState<'a> {
     current_rate: u32,
     max_rate: u32,
     max_flow_so_far: &'a mut u32,
-    valves_to_open: &'a Vec<String>,
+    valves_to_open: &'a Vec<&'a String>,
 }
 
 fn walk_options(state: &mut WalkState) {
@@ -96,7 +96,7 @@ fn walk_options(state: &mut WalkState) {
         return;
     }
     for (i, valve_to_open) in state.valves_to_open.iter().enumerate() {
-        if valve_to_open == state.current_valve {
+        if *valve_to_open == state.current_valve {
             // Open this valve, and tick on time by one step.
             let new_flow = state.current_flow + state.current_rate;
             let new_rate =
@@ -120,7 +120,7 @@ fn walk_options(state: &mut WalkState) {
             .routes
             .get(state.current_valve)
             .unwrap()
-            .get(valve_to_open)
+            .get(*valve_to_open)
             .unwrap();
         if *route_length >= state.time_limit {
             // Can't get to the valve and open it within time limit, so give up here.
@@ -147,26 +147,58 @@ fn walk_options(state: &mut WalkState) {
 fn main() -> eyre::Result<()> {
     let valve_map = parse_input()?;
     let routes = map_routes(&valve_map)?;
-    let time_limit = 30;
-    let mut max_flow_so_far = 0;
+    let time_limit = 26;
+    let _max_flow_so_far = 0;
     let valves_to_open: Vec<String> = valve_map
         .flow_rates
         .iter()
         .filter(|(_, f)| **f > 0)
         .map(|(v, _)| v.to_owned())
         .collect();
-    let mut state = WalkState {
-        valve_map: &valve_map,
-        routes: &routes,
-        current_valve: "AA",
-        time_limit,
-        current_flow: 0,
-        current_rate: 0,
-        max_rate: valve_map.flow_rates.values().sum(),
-        max_flow_so_far: &mut max_flow_so_far,
-        valves_to_open: &valves_to_open,
-    };
-    walk_options(&mut state);
+    let valve_combinations: Vec<(Vec<_>, Vec<_>)> = (0..2usize.pow(valves_to_open.len() as u32)).map(|i| {
+        let mut lhs = Vec::new();
+        let mut rhs = Vec::new();
+        for (t, v) in valves_to_open.iter().enumerate() {
+            if (i >> t) %2 == 1 {
+                lhs.push(v);
+            } else {
+                rhs.push(v);
+            }
+        }
+        (lhs, rhs)
+    }).collect();
+    let mut max_flow_so_far = 0;
+    for (lhs, rhs) in valve_combinations {
+        let mut lhs_max_flow_so_far = 0;
+        walk_options(&mut WalkState {
+            valve_map: &valve_map,
+            routes: &routes,
+            current_valve: "AA",
+            time_limit,
+            current_flow: 0,
+            current_rate: 0,
+            max_rate: valve_map.flow_rates.values().sum(),
+            max_flow_so_far: &mut lhs_max_flow_so_far,
+            valves_to_open: &lhs,
+    
+        });
+        let mut rhs_max_flow_so_far = 0;
+        walk_options(&mut WalkState{
+            valve_map: &valve_map,
+            routes: &routes,
+            current_valve: "AA",
+            time_limit,
+            current_flow: 0,
+            current_rate: 0,
+            max_rate: valve_map.flow_rates.values().sum(),
+            max_flow_so_far: &mut rhs_max_flow_so_far,
+            valves_to_open: &rhs,
+        });
+        let max_flow = lhs_max_flow_so_far + rhs_max_flow_so_far;
+        if max_flow > max_flow_so_far {
+            max_flow_so_far = max_flow;
+        }
+    }
     println!("Max flow rate: {max_flow_so_far}");
     Ok(())
 }
