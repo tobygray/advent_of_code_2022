@@ -1,11 +1,33 @@
-use std::io::{self, BufRead};
+
+
+enum Piece {
+    // ####
+    Horizontal,
+    // .#.
+    // ###
+    // .#.    
+    Cross,
+    // ..#
+    // ..#
+    // ###    
+    L,
+    // #
+    // #
+    // #
+    // #    
+    Vertical,
+    // ##
+    // ##
+    Square,
+}
 
 fn main() -> eyre::Result<()> {
-    let sum = 0;
-    for line in io::stdin().lock().lines() {
-        let line = line?;
-        print!("{}", line);
+    let jet_pattern = read_jet_pattern()?;
+    // TODO: Read input sequence
+    // Simulate rock falls
+    let rock_count: u64 = 2022;
+    for i in 0..rock_count {
+        println!("{i}");
     }
-    println!("Sum: {}", sum);
     Ok(())
 }
