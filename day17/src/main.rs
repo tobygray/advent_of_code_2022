@@ -1,4 +1,7 @@
-use std::io::{self, BufRead};
+use std::{
+    collections::VecDeque,
+    io::{self, BufRead},
+};
 
 #[derive(Debug)]
 enum Piece {
@@ -20,154 +23,6 @@ enum Piece {
     // ##
     // ##
     Square,
-}
-
-impl Piece {
-    fn can_move_down(&self, world: &World, rock_x: i32, rock_y: usize) -> bool {
-        // Check world bounds.
-        if rock_y == 0 {
-            return false;
-        }
-        // Check other rocks.
-        match self {
-            Piece::Horizontal => world.rows[rock_y - 1] & (0b11110000 >> rock_x) == 0,
-            Piece::Cross => {
-                world.rows[rock_y + 1] & (0b01000000 >> rock_x) == 0
-                    && world.rows[rock_y] & (0b11100000 >> rock_x) == 0
-                    && world.rows[rock_y - 1] & (0b01000000 >> rock_x) == 0
-            }
-            Piece::L => {
-                world.rows[rock_y + 1] & (0b00100000 >> rock_x) == 0
-                    && world.rows[rock_y] & (0b00100000 >> rock_x) == 0
-                    && world.rows[rock_y - 1] & (0b11100000 >> rock_x) == 0
-            }
-            Piece::Vertical => {
-                world.rows[rock_y + 2] & (0b10000000 >> rock_x) == 0
-                    && world.rows[rock_y + 1] & (0b10000000 >> rock_x) == 0
-                    && world.rows[rock_y] & (0b10000000 >> rock_x) == 0
-                    && world.rows[rock_y - 1] & (0b10000000 >> rock_x) == 0
-            }
-            Piece::Square => {
-                world.rows[rock_y] & (0b11000000 >> rock_x) == 0
-                    && world.rows[rock_y - 1] & (0b11000000 >> rock_x) == 0
-            }
-        }
-    }
-
-    fn can_move_left(&self, world: &World, rock_x: i32, rock_y: usize) -> bool {
-        // Check world bounds.
-        if rock_x == 0 {
-            return false;
-        }
-        // Check other rocks.
-        match self {
-            Piece::Horizontal => world.rows[rock_y] & (0b11110000 >> (rock_x - 1)) == 0,
-            Piece::Cross => {
-                world.rows[rock_y + 2] & (0b01000000 >> (rock_x - 1)) == 0
-                    && world.rows[rock_y + 1] & (0b11100000 >> (rock_x - 1)) == 0
-                    && world.rows[rock_y] & (0b01000000 >> (rock_x - 1)) == 0
-            }
-            Piece::L => {
-                world.rows[rock_y + 2] & (0b00100000 >> (rock_x - 1)) == 0
-                    && world.rows[rock_y + 1] & (0b00100000 >> (rock_x - 1)) == 0
-                    && world.rows[rock_y] & (0b11100000 >> (rock_x - 1)) == 0
-            }
-            Piece::Vertical => {
-                world.rows[rock_y + 3] & (0b10000000 >> (rock_x - 1)) == 0
-                    && world.rows[rock_y + 2] & (0b10000000 >> (rock_x - 1)) == 0
-                    && world.rows[rock_y + 1] & (0b10000000 >> (rock_x - 1)) == 0
-                    && world.rows[rock_y] & (0b10000000 >> (rock_x - 1)) == 0
-            }
-            Piece::Square => {
-                world.rows[rock_y + 1] & (0b11000000 >> (rock_x - 1)) == 0
-                    && world.rows[rock_y] & (0b11000000 >> (rock_x - 1)) == 0
-            }
-        }
-    }
-
-    fn can_move_right(&self, world: &World, rock_x: i32, rock_y: usize) -> bool {
-        // Check world bounds.
-        match self {
-            Piece::Horizontal => {
-                if rock_x >= 3 {
-                    return false;
-                }
-            }
-            Piece::Cross => {
-                if rock_x >= 4 {
-                    return false;
-                }
-            }
-            Piece::L => {
-                if rock_x >= 4 {
-                    return false;
-                }
-            }
-            Piece::Vertical => {
-                if rock_x >= 6 {
-                    return false;
-                }
-            }
-            Piece::Square => {
-                if rock_x >= 5 {
-                    return false;
-                }
-            }
-        }
-        // Check other rocks.
-        match self {
-            Piece::Horizontal => world.rows[rock_y] & (0b11110000 >> (rock_x + 1)) == 0,
-            Piece::Cross => {
-                world.rows[rock_y + 2] & (0b01000000 >> (rock_x + 1)) == 0
-                    && world.rows[rock_y + 1] & (0b11100000 >> (rock_x + 1)) == 0
-                    && world.rows[rock_y] & (0b01000000 >> (rock_x + 1)) == 0
-            }
-            Piece::L => {
-                world.rows[rock_y + 2] & (0b00100000 >> (rock_x + 1)) == 0
-                    && world.rows[rock_y + 1] & (0b00100000 >> (rock_x + 1)) == 0
-                    && world.rows[rock_y] & (0b11100000 >> (rock_x + 1)) == 0
-            }
-            Piece::Vertical => {
-                world.rows[rock_y + 3] & (0b10000000 >> (rock_x + 1)) == 0
-                    && world.rows[rock_y + 2] & (0b10000000 >> (rock_x + 1)) == 0
-                    && world.rows[rock_y + 1] & (0b10000000 >> (rock_x + 1)) == 0
-                    && world.rows[rock_y] & (0b10000000 >> (rock_x + 1)) == 0
-            }
-            Piece::Square => {
-                world.rows[rock_y + 1] & (0b11000000 >> (rock_x + 1)) == 0
-                    && world.rows[rock_y] & (0b11000000 >> (rock_x + 1)) == 0
-            }
-        }
-    }
-
-    fn store(&self, world: &mut World, rock_x: i32, rock_y: usize) {
-        match self {
-            Piece::Horizontal => {
-                world.rows[rock_y] |= 0b11110000 >> rock_x;
-            }
-            Piece::Cross => {
-                world.rows[rock_y + 2] |= 0b01000000 >> rock_x;
-                world.rows[rock_y + 1] |= 0b11100000 >> rock_x;
-                world.rows[rock_y] |= 0b01000000 >> rock_x;
-            }
-            Piece::L => {
-                world.rows[rock_y + 2] |= 0b00100000 >> rock_x;
-                world.rows[rock_y + 1] |= 0b00100000 >> rock_x;
-                world.rows[rock_y] |= 0b11100000 >> rock_x;
-            }
-            Piece::Vertical => {
-                world.rows[rock_y + 3] |= 0b10000000 >> rock_x;
-
-                world.rows[rock_y + 2] |= 0b10000000 >> rock_x;
-                world.rows[rock_y + 1] |= 0b10000000 >> rock_x;
-                world.rows[rock_y] |= 0b10000000 >> rock_x;
-            }
-            Piece::Square => {
-                world.rows[rock_y + 1] |= 0b11000000 >> rock_x;
-                world.rows[rock_y] |= 0b11000000 >> rock_x;
-            }
-        }
-    }
 }
 
 enum JetDirection {
@@ -197,12 +52,14 @@ fn read_jet_pattern() -> eyre::Result<Vec<JetDirection>> {
 }
 
 struct World {
-    rows: Vec<u8>,
+    rows: VecDeque<u8>,
 }
 
 impl World {
     fn new() -> World {
-        World { rows: vec![] }
+        World {
+            rows: VecDeque::new(),
+        }
     }
 
     fn last_used_row(&self) -> eyre::Result<usize> {
@@ -222,20 +79,168 @@ impl World {
         self.rows.extend(extra_rows);
     }
 
-    fn print(&self) {
-        println!();
-        for row in self.rows.iter().rev() {
-            print!("|");
-            for idx in 0..7 {
-                if row & (0b10000000 >> idx) == 0 {
-                    print!(".");
-                } else {
-                    print!("#");
+    fn compress(&mut self, row: usize) {
+        if self.rows[row] == 0b11111110 {
+            println!("TETRIS at {row}!");
+        }
+    }
+
+    fn store(&mut self, rock: &Piece, rock_x: i32, rock_y: usize) {
+        match rock {
+            Piece::Horizontal => {
+                self.rows[rock_y] |= 0b11110000 >> rock_x;
+                self.compress(rock_y);
+            }
+            Piece::Cross => {
+                self.rows[rock_y + 2] |= 0b01000000 >> rock_x;
+                self.rows[rock_y + 1] |= 0b11100000 >> rock_x;
+                self.rows[rock_y] |= 0b01000000 >> rock_x;
+                self.compress(rock_y + 2);
+                self.compress(rock_y + 1);
+                self.compress(rock_y);
+            }
+            Piece::L => {
+                self.rows[rock_y + 2] |= 0b00100000 >> rock_x;
+                self.rows[rock_y + 1] |= 0b00100000 >> rock_x;
+                self.rows[rock_y] |= 0b11100000 >> rock_x;
+                self.compress(rock_y + 2);
+                self.compress(rock_y + 1);
+                self.compress(rock_y);
+            }
+            Piece::Vertical => {
+                self.rows[rock_y + 3] |= 0b10000000 >> rock_x;
+                self.rows[rock_y + 2] |= 0b10000000 >> rock_x;
+                self.rows[rock_y + 1] |= 0b10000000 >> rock_x;
+                self.rows[rock_y] |= 0b10000000 >> rock_x;
+                self.compress(rock_y + 3);
+                self.compress(rock_y + 2);
+                self.compress(rock_y + 1);
+                self.compress(rock_y);
+            }
+            Piece::Square => {
+                self.rows[rock_y + 1] |= 0b11000000 >> rock_x;
+                self.rows[rock_y] |= 0b11000000 >> rock_x;
+                self.compress(rock_y + 1);
+                self.compress(rock_y);
+            }
+        };
+    }
+
+    fn can_move_down(&self, rock: &Piece, rock_x: i32, rock_y: usize) -> bool {
+        // Check world bounds.
+        if rock_y == 0 {
+            return false;
+        }
+        // Check other rocks.
+        match rock {
+            Piece::Horizontal => self.rows[rock_y - 1] & (0b11110000 >> rock_x) == 0,
+            Piece::Cross => {
+                self.rows[rock_y + 1] & (0b01000000 >> rock_x) == 0
+                    && self.rows[rock_y] & (0b11100000 >> rock_x) == 0
+                    && self.rows[rock_y - 1] & (0b01000000 >> rock_x) == 0
+            }
+            Piece::L => {
+                self.rows[rock_y + 1] & (0b00100000 >> rock_x) == 0
+                    && self.rows[rock_y] & (0b00100000 >> rock_x) == 0
+                    && self.rows[rock_y - 1] & (0b11100000 >> rock_x) == 0
+            }
+            Piece::Vertical => {
+                self.rows[rock_y + 2] & (0b10000000 >> rock_x) == 0
+                    && self.rows[rock_y + 1] & (0b10000000 >> rock_x) == 0
+                    && self.rows[rock_y] & (0b10000000 >> rock_x) == 0
+                    && self.rows[rock_y - 1] & (0b10000000 >> rock_x) == 0
+            }
+            Piece::Square => {
+                self.rows[rock_y] & (0b11000000 >> rock_x) == 0
+                    && self.rows[rock_y - 1] & (0b11000000 >> rock_x) == 0
+            }
+        }
+    }
+
+    fn can_move_left(&self, rock: &Piece, rock_x: i32, rock_y: usize) -> bool {
+        // Check world bounds.
+        if rock_x == 0 {
+            return false;
+        }
+        // Check other rocks.
+        match rock {
+            Piece::Horizontal => self.rows[rock_y] & (0b11110000 >> (rock_x - 1)) == 0,
+            Piece::Cross => {
+                self.rows[rock_y + 2] & (0b01000000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y + 1] & (0b11100000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y] & (0b01000000 >> (rock_x - 1)) == 0
+            }
+            Piece::L => {
+                self.rows[rock_y + 2] & (0b00100000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y + 1] & (0b00100000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y] & (0b11100000 >> (rock_x - 1)) == 0
+            }
+            Piece::Vertical => {
+                self.rows[rock_y + 3] & (0b10000000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y + 2] & (0b10000000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y + 1] & (0b10000000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y] & (0b10000000 >> (rock_x - 1)) == 0
+            }
+            Piece::Square => {
+                self.rows[rock_y + 1] & (0b11000000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y] & (0b11000000 >> (rock_x - 1)) == 0
+            }
+        }
+    }
+
+    fn can_move_right(&self, rock: &Piece, rock_x: i32, rock_y: usize) -> bool {
+        // Check world bounds.
+        match rock {
+            Piece::Horizontal => {
+                if rock_x >= 3 {
+                    return false;
                 }
             }
-            println!("|");
+            Piece::Cross => {
+                if rock_x >= 4 {
+                    return false;
+                }
+            }
+            Piece::L => {
+                if rock_x >= 4 {
+                    return false;
+                }
+            }
+            Piece::Vertical => {
+                if rock_x >= 6 {
+                    return false;
+                }
+            }
+            Piece::Square => {
+                if rock_x >= 5 {
+                    return false;
+                }
+            }
         }
-        println!("+-------+");
+        // Check other rocks.
+        match rock {
+            Piece::Horizontal => self.rows[rock_y] & (0b11110000 >> (rock_x + 1)) == 0,
+            Piece::Cross => {
+                self.rows[rock_y + 2] & (0b01000000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y + 1] & (0b11100000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y] & (0b01000000 >> (rock_x + 1)) == 0
+            }
+            Piece::L => {
+                self.rows[rock_y + 2] & (0b00100000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y + 1] & (0b00100000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y] & (0b11100000 >> (rock_x + 1)) == 0
+            }
+            Piece::Vertical => {
+                self.rows[rock_y + 3] & (0b10000000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y + 2] & (0b10000000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y + 1] & (0b10000000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y] & (0b10000000 >> (rock_x + 1)) == 0
+            }
+            Piece::Square => {
+                self.rows[rock_y + 1] & (0b11000000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y] & (0b11000000 >> (rock_x + 1)) == 0
+            }
+        }
     }
 }
 
@@ -253,6 +258,7 @@ fn main() -> eyre::Result<()> {
     let mut world = World::new();
     // Simulate rock falls
     let rock_count = 2022;
+    //let rock_count = 1000000000000;
     for (rock_number, rock) in rock_iter {
         if rock_number == rock_count {
             break;
@@ -264,24 +270,24 @@ fn main() -> eyre::Result<()> {
             // Move the rock with the jet (if possible)
             match jet_iter.next().unwrap() {
                 JetDirection::Left => {
-                    if rock.can_move_left(&world, rock_x, rock_y) {
+                    if world.can_move_left(rock, rock_x, rock_y) {
                         rock_x -= 1;
                     }
                 }
                 JetDirection::Right => {
-                    if rock.can_move_right(&world, rock_x, rock_y) {
+                    if world.can_move_right(rock, rock_x, rock_y) {
                         rock_x += 1;
                     }
                 }
             }
             // Move the rock down.
-            if !rock.can_move_down(&world, rock_x, rock_y) {
+            if !world.can_move_down(rock, rock_x, rock_y) {
                 break;
             }
             rock_y -= 1;
         }
         // Save the rock to the world.
-        rock.store(&mut world, rock_x, rock_y);
+        world.store(rock, rock_x, rock_y);
     }
     let max_row = world.last_used_row()?;
     println!("Last filled row: {max_row}");
