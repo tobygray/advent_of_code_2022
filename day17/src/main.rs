@@ -53,77 +53,78 @@ fn read_jet_pattern() -> eyre::Result<Vec<JetDirection>> {
 
 struct World {
     rows: VecDeque<u8>,
+    y_offset: usize,
+    last_used_row: Option<usize>,
 }
+
+const BUFFER_SIZE: usize = 1000000;
+const BUFFER_DRAIN_SIZE: usize = BUFFER_SIZE / 10;
 
 impl World {
     fn new() -> World {
-        World {
+        let mut ret = World {
             rows: VecDeque::new(),
-        }
-    }
-
-    fn last_used_row(&self) -> eyre::Result<usize> {
-        for (i, v) in self.rows.iter().rev().enumerate() {
-            if *v != 0 {
-                return Ok(self.rows.len() - i);
-            }
-        }
-        Err(eyre::eyre!("No rows in use"))
+            y_offset: 0,
+            last_used_row: None,
+        };
+        ret.rows.resize(BUFFER_SIZE, 0);
+        ret
     }
 
     fn reserve(&mut self, max_y: usize) {
-        if self.rows.len() >= max_y {
+        if (self.rows.len() + self.y_offset) >= max_y {
             return;
         }
-        let extra_rows = vec![0_u8; max_y - self.rows.len()];
-        self.rows.extend(extra_rows);
-    }
-
-    fn compress(&mut self, row: usize) {
-        if self.rows[row] == 0b11111110 {
-            println!("TETRIS at {row}!");
-        }
+        let _extra_rows = vec![0_u8; max_y - self.rows.len() - self.y_offset];
+        self.rows.drain(0..BUFFER_DRAIN_SIZE);
+        self.rows.resize(BUFFER_SIZE, 0);
+        self.y_offset += BUFFER_DRAIN_SIZE;
     }
 
     fn store(&mut self, rock: &Piece, rock_x: i32, rock_y: usize) {
         match rock {
             Piece::Horizontal => {
-                self.rows[rock_y] |= 0b11110000 >> rock_x;
-                self.compress(rock_y);
+                self.rows[rock_y - self.y_offset] |= 0b11110000 >> rock_x;
+                self.set_last_used_row(rock_y);
             }
             Piece::Cross => {
-                self.rows[rock_y + 2] |= 0b01000000 >> rock_x;
-                self.rows[rock_y + 1] |= 0b11100000 >> rock_x;
-                self.rows[rock_y] |= 0b01000000 >> rock_x;
-                self.compress(rock_y + 2);
-                self.compress(rock_y + 1);
-                self.compress(rock_y);
+                self.rows[rock_y + 2 - self.y_offset] |= 0b01000000 >> rock_x;
+                self.rows[rock_y + 1 - self.y_offset] |= 0b11100000 >> rock_x;
+                self.rows[rock_y - self.y_offset] |= 0b01000000 >> rock_x;
+                self.set_last_used_row(rock_y + 2);
             }
             Piece::L => {
-                self.rows[rock_y + 2] |= 0b00100000 >> rock_x;
-                self.rows[rock_y + 1] |= 0b00100000 >> rock_x;
-                self.rows[rock_y] |= 0b11100000 >> rock_x;
-                self.compress(rock_y + 2);
-                self.compress(rock_y + 1);
-                self.compress(rock_y);
+                self.rows[rock_y + 2 - self.y_offset] |= 0b00100000 >> rock_x;
+                self.rows[rock_y + 1 - self.y_offset] |= 0b00100000 >> rock_x;
+                self.rows[rock_y - self.y_offset] |= 0b11100000 >> rock_x;
+                self.set_last_used_row(rock_y + 2);
             }
             Piece::Vertical => {
-                self.rows[rock_y + 3] |= 0b10000000 >> rock_x;
-                self.rows[rock_y + 2] |= 0b10000000 >> rock_x;
-                self.rows[rock_y + 1] |= 0b10000000 >> rock_x;
-                self.rows[rock_y] |= 0b10000000 >> rock_x;
-                self.compress(rock_y + 3);
-                self.compress(rock_y + 2);
-                self.compress(rock_y + 1);
-                self.compress(rock_y);
+                self.rows[rock_y + 3 - self.y_offset] |= 0b10000000 >> rock_x;
+                self.rows[rock_y + 2 - self.y_offset] |= 0b10000000 >> rock_x;
+                self.rows[rock_y + 1 - self.y_offset] |= 0b10000000 >> rock_x;
+                self.rows[rock_y - self.y_offset] |= 0b10000000 >> rock_x;
+                self.set_last_used_row(rock_y + 3);
             }
             Piece::Square => {
-                self.rows[rock_y + 1] |= 0b11000000 >> rock_x;
-                self.rows[rock_y] |= 0b11000000 >> rock_x;
-                self.compress(rock_y + 1);
-                self.compress(rock_y);
+                self.rows[rock_y + 1 - self.y_offset] |= 0b11000000 >> rock_x;
+                self.rows[rock_y - self.y_offset] |= 0b11000000 >> rock_x;
+                self.set_last_used_row(rock_y + 1);
             }
         };
+    }
+
+    fn set_last_used_row(&mut self, y: usize) {
+        match self.last_used_row {
+            Some(old) => {
+                if y > old {
+                    self.last_used_row = Some(y);
+                }
+            }
+            None => {
+                self.last_used_row = Some(y);
+            }
+        }
     }
 
     fn can_move_down(&self, rock: &Piece, rock_x: i32, rock_y: usize) -> bool {
@@ -133,26 +134,28 @@ impl World {
         }
         // Check other rocks.
         match rock {
-            Piece::Horizontal => self.rows[rock_y - 1] & (0b11110000 >> rock_x) == 0,
+            Piece::Horizontal => {
+                self.rows[rock_y - 1 - self.y_offset] & (0b11110000 >> rock_x) == 0
+            }
             Piece::Cross => {
-                self.rows[rock_y + 1] & (0b01000000 >> rock_x) == 0
-                    && self.rows[rock_y] & (0b11100000 >> rock_x) == 0
-                    && self.rows[rock_y - 1] & (0b01000000 >> rock_x) == 0
+                self.rows[rock_y + 1 - self.y_offset] & (0b01000000 >> rock_x) == 0
+                    && self.rows[rock_y - self.y_offset] & (0b11100000 >> rock_x) == 0
+                    && self.rows[rock_y - 1 - self.y_offset] & (0b01000000 >> rock_x) == 0
             }
             Piece::L => {
-                self.rows[rock_y + 1] & (0b00100000 >> rock_x) == 0
-                    && self.rows[rock_y] & (0b00100000 >> rock_x) == 0
-                    && self.rows[rock_y - 1] & (0b11100000 >> rock_x) == 0
+                self.rows[rock_y + 1 - self.y_offset] & (0b00100000 >> rock_x) == 0
+                    && self.rows[rock_y - self.y_offset] & (0b00100000 >> rock_x) == 0
+                    && self.rows[rock_y - 1 - self.y_offset] & (0b11100000 >> rock_x) == 0
             }
             Piece::Vertical => {
-                self.rows[rock_y + 2] & (0b10000000 >> rock_x) == 0
-                    && self.rows[rock_y + 1] & (0b10000000 >> rock_x) == 0
-                    && self.rows[rock_y] & (0b10000000 >> rock_x) == 0
-                    && self.rows[rock_y - 1] & (0b10000000 >> rock_x) == 0
+                self.rows[rock_y + 2 - self.y_offset] & (0b10000000 >> rock_x) == 0
+                    && self.rows[rock_y + 1 - self.y_offset] & (0b10000000 >> rock_x) == 0
+                    && self.rows[rock_y - self.y_offset] & (0b10000000 >> rock_x) == 0
+                    && self.rows[rock_y - 1 - self.y_offset] & (0b10000000 >> rock_x) == 0
             }
             Piece::Square => {
-                self.rows[rock_y] & (0b11000000 >> rock_x) == 0
-                    && self.rows[rock_y - 1] & (0b11000000 >> rock_x) == 0
+                self.rows[rock_y - self.y_offset] & (0b11000000 >> rock_x) == 0
+                    && self.rows[rock_y - 1 - self.y_offset] & (0b11000000 >> rock_x) == 0
             }
         }
     }
@@ -164,26 +167,28 @@ impl World {
         }
         // Check other rocks.
         match rock {
-            Piece::Horizontal => self.rows[rock_y] & (0b11110000 >> (rock_x - 1)) == 0,
+            Piece::Horizontal => {
+                self.rows[rock_y - self.y_offset] & (0b11110000 >> (rock_x - 1)) == 0
+            }
             Piece::Cross => {
-                self.rows[rock_y + 2] & (0b01000000 >> (rock_x - 1)) == 0
-                    && self.rows[rock_y + 1] & (0b11100000 >> (rock_x - 1)) == 0
-                    && self.rows[rock_y] & (0b01000000 >> (rock_x - 1)) == 0
+                self.rows[rock_y + 2 - self.y_offset] & (0b01000000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y + 1 - self.y_offset] & (0b11100000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y - self.y_offset] & (0b01000000 >> (rock_x - 1)) == 0
             }
             Piece::L => {
-                self.rows[rock_y + 2] & (0b00100000 >> (rock_x - 1)) == 0
-                    && self.rows[rock_y + 1] & (0b00100000 >> (rock_x - 1)) == 0
-                    && self.rows[rock_y] & (0b11100000 >> (rock_x - 1)) == 0
+                self.rows[rock_y + 2 - self.y_offset] & (0b00100000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y + 1 - self.y_offset] & (0b00100000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y - self.y_offset] & (0b11100000 >> (rock_x - 1)) == 0
             }
             Piece::Vertical => {
-                self.rows[rock_y + 3] & (0b10000000 >> (rock_x - 1)) == 0
-                    && self.rows[rock_y + 2] & (0b10000000 >> (rock_x - 1)) == 0
-                    && self.rows[rock_y + 1] & (0b10000000 >> (rock_x - 1)) == 0
-                    && self.rows[rock_y] & (0b10000000 >> (rock_x - 1)) == 0
+                self.rows[rock_y + 3 - self.y_offset] & (0b10000000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y + 2 - self.y_offset] & (0b10000000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y + 1 - self.y_offset] & (0b10000000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y - self.y_offset] & (0b10000000 >> (rock_x - 1)) == 0
             }
             Piece::Square => {
-                self.rows[rock_y + 1] & (0b11000000 >> (rock_x - 1)) == 0
-                    && self.rows[rock_y] & (0b11000000 >> (rock_x - 1)) == 0
+                self.rows[rock_y + 1 - self.y_offset] & (0b11000000 >> (rock_x - 1)) == 0
+                    && self.rows[rock_y - self.y_offset] & (0b11000000 >> (rock_x - 1)) == 0
             }
         }
     }
@@ -219,26 +224,28 @@ impl World {
         }
         // Check other rocks.
         match rock {
-            Piece::Horizontal => self.rows[rock_y] & (0b11110000 >> (rock_x + 1)) == 0,
+            Piece::Horizontal => {
+                self.rows[rock_y - self.y_offset] & (0b11110000 >> (rock_x + 1)) == 0
+            }
             Piece::Cross => {
-                self.rows[rock_y + 2] & (0b01000000 >> (rock_x + 1)) == 0
-                    && self.rows[rock_y + 1] & (0b11100000 >> (rock_x + 1)) == 0
-                    && self.rows[rock_y] & (0b01000000 >> (rock_x + 1)) == 0
+                self.rows[rock_y + 2 - self.y_offset] & (0b01000000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y + 1 - self.y_offset] & (0b11100000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y - self.y_offset] & (0b01000000 >> (rock_x + 1)) == 0
             }
             Piece::L => {
-                self.rows[rock_y + 2] & (0b00100000 >> (rock_x + 1)) == 0
-                    && self.rows[rock_y + 1] & (0b00100000 >> (rock_x + 1)) == 0
-                    && self.rows[rock_y] & (0b11100000 >> (rock_x + 1)) == 0
+                self.rows[rock_y + 2 - self.y_offset] & (0b00100000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y + 1 - self.y_offset] & (0b00100000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y - self.y_offset] & (0b11100000 >> (rock_x + 1)) == 0
             }
             Piece::Vertical => {
-                self.rows[rock_y + 3] & (0b10000000 >> (rock_x + 1)) == 0
-                    && self.rows[rock_y + 2] & (0b10000000 >> (rock_x + 1)) == 0
-                    && self.rows[rock_y + 1] & (0b10000000 >> (rock_x + 1)) == 0
-                    && self.rows[rock_y] & (0b10000000 >> (rock_x + 1)) == 0
+                self.rows[rock_y + 3 - self.y_offset] & (0b10000000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y + 2 - self.y_offset] & (0b10000000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y + 1 - self.y_offset] & (0b10000000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y - self.y_offset] & (0b10000000 >> (rock_x + 1)) == 0
             }
             Piece::Square => {
-                self.rows[rock_y + 1] & (0b11000000 >> (rock_x + 1)) == 0
-                    && self.rows[rock_y] & (0b11000000 >> (rock_x + 1)) == 0
+                self.rows[rock_y + 1 - self.y_offset] & (0b11000000 >> (rock_x + 1)) == 0
+                    && self.rows[rock_y - self.y_offset] & (0b11000000 >> (rock_x + 1)) == 0
             }
         }
     }
@@ -257,14 +264,14 @@ fn main() -> eyre::Result<()> {
     let rock_iter = rock_pattern.iter().cycle().enumerate();
     let mut world = World::new();
     // Simulate rock falls
-    let rock_count = 2022;
-    //let rock_count = 1000000000000;
+    //let rock_count = 2022;
+    let rock_count = 1000000000000;
     for (rock_number, rock) in rock_iter {
         if rock_number == rock_count {
             break;
         }
         let mut rock_x = 2;
-        let mut rock_y = world.last_used_row().map_or(3, |r| r + 3);
+        let mut rock_y = world.last_used_row.map_or(3, |r| r + 4);
         world.reserve(rock_y + 4);
         loop {
             // Move the rock with the jet (if possible)
@@ -289,7 +296,7 @@ fn main() -> eyre::Result<()> {
         // Save the rock to the world.
         world.store(rock, rock_x, rock_y);
     }
-    let max_row = world.last_used_row()?;
-    println!("Last filled row: {max_row}");
+    let max_row = world.last_used_row;
+    println!("Last filled row: {max_row:?}");
     Ok(())
 }
