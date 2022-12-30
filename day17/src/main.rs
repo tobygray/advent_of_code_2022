@@ -1,6 +1,7 @@
 use std::{
     collections::VecDeque,
     io::{self, BufRead},
+    time::Instant,
 };
 
 #[derive(Debug)]
@@ -57,7 +58,8 @@ struct World {
     last_used_row: Option<usize>,
 }
 
-const BUFFER_SIZE: usize = 1000000;
+//const BUFFER_SIZE: usize = 1000000000;
+const BUFFER_SIZE: usize = 1000;
 const BUFFER_DRAIN_SIZE: usize = BUFFER_SIZE / 10;
 
 impl World {
@@ -263,10 +265,21 @@ fn main() -> eyre::Result<()> {
     ];
     let rock_iter = rock_pattern.iter().cycle().enumerate();
     let mut world = World::new();
+    let start_instant = Instant::now();
     // Simulate rock falls
-    //let rock_count = 2022;
     let rock_count = 1000000000000;
     for (rock_number, rock) in rock_iter {
+        if rock_number == 2022 {
+            let max_row = world.last_used_row;
+            println!("2022 highest row: {max_row:?}");
+        }
+        if (rock_number % 300000000) == 0 && rock_number != 0 {
+            let now = Instant::now();
+            let time_so_far = now - start_instant;
+            let per_iteration = time_so_far.as_nanos() / (rock_number as u128);
+            let remaining = (per_iteration * ((rock_count - rock_number) as u128)) / 1000000000;
+            println!("At {rock_number}, runtime {time_so_far:?}, per_iteration {per_iteration:?}ns, remaining {remaining:?}s");
+        }
         if rock_number == rock_count {
             break;
         }
