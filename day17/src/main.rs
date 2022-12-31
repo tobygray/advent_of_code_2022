@@ -1,5 +1,4 @@
 use std::{
-    collections::VecDeque,
     io::{self, BufRead},
     time::Instant,
 };
@@ -53,19 +52,19 @@ fn read_jet_pattern() -> eyre::Result<Vec<JetDirection>> {
 }
 
 struct World {
-    rows: VecDeque<u8>,
+    rows: Vec<u8>,
     y_offset: usize,
     last_used_row: Option<usize>,
 }
 
-//const BUFFER_SIZE: usize = 1000000000;
-const BUFFER_SIZE: usize = 1000;
+const BUFFER_SIZE: usize = 1000000000;
+//const BUFFER_SIZE: usize = 1000;
 const BUFFER_DRAIN_SIZE: usize = BUFFER_SIZE / 10;
 
 impl World {
     fn new() -> World {
         let mut ret = World {
-            rows: VecDeque::new(),
+            rows: Vec::new(),
             y_offset: 0,
             last_used_row: None,
         };
@@ -77,7 +76,6 @@ impl World {
         if (self.rows.len() + self.y_offset) >= max_y {
             return;
         }
-        let _extra_rows = vec![0_u8; max_y - self.rows.len() - self.y_offset];
         self.rows.drain(0..BUFFER_DRAIN_SIZE);
         self.rows.resize(BUFFER_SIZE, 0);
         self.y_offset += BUFFER_DRAIN_SIZE;
@@ -196,56 +194,42 @@ impl World {
     }
 
     fn can_move_right(&self, rock: &Piece, rock_x: i32, rock_y: usize) -> bool {
-        // Check world bounds.
         match rock {
             Piece::Horizontal => {
                 if rock_x >= 3 {
                     return false;
                 }
-            }
-            Piece::Cross => {
-                if rock_x >= 4 {
-                    return false;
-                }
-            }
-            Piece::L => {
-                if rock_x >= 4 {
-                    return false;
-                }
-            }
-            Piece::Vertical => {
-                if rock_x >= 6 {
-                    return false;
-                }
-            }
-            Piece::Square => {
-                if rock_x >= 5 {
-                    return false;
-                }
-            }
-        }
-        // Check other rocks.
-        match rock {
-            Piece::Horizontal => {
                 self.rows[rock_y - self.y_offset] & (0b11110000 >> (rock_x + 1)) == 0
             }
             Piece::Cross => {
+                if rock_x >= 4 {
+                    return false;
+                }
                 self.rows[rock_y + 2 - self.y_offset] & (0b01000000 >> (rock_x + 1)) == 0
                     && self.rows[rock_y + 1 - self.y_offset] & (0b11100000 >> (rock_x + 1)) == 0
                     && self.rows[rock_y - self.y_offset] & (0b01000000 >> (rock_x + 1)) == 0
             }
             Piece::L => {
+                if rock_x >= 4 {
+                    return false;
+                }
                 self.rows[rock_y + 2 - self.y_offset] & (0b00100000 >> (rock_x + 1)) == 0
                     && self.rows[rock_y + 1 - self.y_offset] & (0b00100000 >> (rock_x + 1)) == 0
                     && self.rows[rock_y - self.y_offset] & (0b11100000 >> (rock_x + 1)) == 0
             }
             Piece::Vertical => {
+                if rock_x >= 6 {
+                    return false;
+                }
                 self.rows[rock_y + 3 - self.y_offset] & (0b10000000 >> (rock_x + 1)) == 0
                     && self.rows[rock_y + 2 - self.y_offset] & (0b10000000 >> (rock_x + 1)) == 0
                     && self.rows[rock_y + 1 - self.y_offset] & (0b10000000 >> (rock_x + 1)) == 0
                     && self.rows[rock_y - self.y_offset] & (0b10000000 >> (rock_x + 1)) == 0
             }
             Piece::Square => {
+                if rock_x >= 5 {
+                    return false;
+                }
                 self.rows[rock_y + 1 - self.y_offset] & (0b11000000 >> (rock_x + 1)) == 0
                     && self.rows[rock_y - self.y_offset] & (0b11000000 >> (rock_x + 1)) == 0
             }
@@ -270,7 +254,7 @@ fn main() -> eyre::Result<()> {
     let rock_count = 1000000000000;
     for (rock_number, rock) in rock_iter {
         if rock_number == 2022 {
-            let max_row = world.last_used_row;
+            let max_row = world.last_used_row.unwrap() + 1;
             println!("2022 highest row: {max_row:?}");
         }
         if (rock_number % 300000000) == 0 && rock_number != 0 {
@@ -284,7 +268,10 @@ fn main() -> eyre::Result<()> {
             break;
         }
         let mut rock_x = 2;
-        let mut rock_y = world.last_used_row.map_or(3, |r| r + 4);
+        let mut rock_y = match world.last_used_row {
+            Some(v) => v + 4,
+            None => 3,
+        };
         world.reserve(rock_y + 4);
         loop {
             // Move the rock with the jet (if possible)
@@ -309,7 +296,7 @@ fn main() -> eyre::Result<()> {
         // Save the rock to the world.
         world.store(rock, rock_x, rock_y);
     }
-    let max_row = world.last_used_row;
+    let max_row = world.last_used_row.unwrap() + 1;
     println!("Last filled row: {max_row:?}");
     Ok(())
 }
