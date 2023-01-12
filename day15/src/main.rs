@@ -55,7 +55,7 @@ fn main() -> eyre::Result<()> {
     for j in 0..max + 1 {
         let mut i = 0;
         while i <= max as i32 {
-            let x = i as i32;
+            let x = i;
             for sensor in &sensors {
                 let distance_from_beacon = sensor.distance_from_beacon();
                 let row_distance = sensor.position.1.abs_diff(j as i32);
@@ -70,7 +70,7 @@ fn main() -> eyre::Result<()> {
                     break;
                 }
             }
-            if x == i as i32 {
+            if x == i {
                 println!("Frequency: {}", (x as u64 * 4000000) + (j as u64));
                 return Ok(());
             }

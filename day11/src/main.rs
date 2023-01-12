@@ -102,7 +102,7 @@ fn main() -> eyre::Result<()> {
                     monkeys[idx].if_true
                 } else {
                     monkeys[idx].if_false
-                } as usize;
+                };
                 monkeys[next_idx].items.push_back(item);
             }
         }

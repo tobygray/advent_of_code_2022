@@ -34,11 +34,9 @@ impl Directory {
     }
 
     fn get_total_size(&self) -> usize {
-        let child_size: usize = self.children.iter().map(|(_, v)| v).sum();
+        let child_size: usize = self.children.values().sum();
         let child_dir_size: usize = self
-            .child_dirs
-            .iter()
-            .map(|(_, d)| d.get_total_size())
+            .child_dirs.values().map(|d| d.get_total_size())
             .sum();
         child_dir_size + child_size
     }
