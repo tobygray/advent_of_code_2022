@@ -40,12 +40,12 @@ struct Resources {
 }
 
 impl Resources {
-    fn mine(&self, robots: &Robots) -> Resources {
+    fn mine(&self, robots: &Robots, time: u32) -> Resources {
         Resources {
-            ore: self.ore + robots.ore,
-            clay: self.clay + robots.clay,
-            obsidian: self.obsidian + robots.obsidian,
-            geodes: self.geodes + robots.geodes,
+            ore: self.ore + (robots.ore * time),
+            clay: self.clay + (robots.clay * time),
+            obsidian: self.obsidian + (robots.obsidian * time),
+            geodes: self.geodes + (robots.geodes * time),
         }
     }
 }
@@ -94,58 +94,154 @@ fn get_max_geodes(
     robots: &Robots,
     minutes_left: u32,
 ) -> u32 {
-    //println!("Trying {blueprint:?} at {resources:?} with {robots:?} time left {minutes_left}");
     if minutes_left == 0 {
         return resources.geodes;
     }
-    // Can always just build nothing this minute.
-    let mut max_so_far = get_max_geodes(blueprint, &resources.mine(robots), robots, minutes_left - 1);
-                            // Try building an ore robot if possible.
-    if resources.ore >= blueprint.ore_ore_cost && robots.ore <= robots.max_ore {
-        let mut resources = resources.mine(robots);
-        resources.ore -= blueprint.ore_ore_cost;
-        let max = get_max_geodes(blueprint, &resources, &robots.add_ore(), minutes_left - 1);
-        if max > max_so_far {
-            max_so_far = max;
+    // Can always just build no more robots for the rest of the time.
+    let mut max_so_far = resources.geodes + robots.geodes * minutes_left;
+    // Try building an ore robot if useful.
+    if robots.ore < robots.max_ore {
+        if resources.ore >= blueprint.ore_ore_cost {
+            // No need for more mining, can just build immediately.
+            let mut resources = resources.mine(robots, 1);
+            resources.ore -= blueprint.ore_ore_cost;
+            let max = get_max_geodes(blueprint, &resources, &robots.add_ore(), minutes_left - 1);
+            if max > max_so_far {
+                max_so_far = max;
+            }
+        } else {
+            let extra_ore_needed = blueprint.ore_ore_cost - resources.ore;
+            let minutes_needed = (extra_ore_needed + robots.ore - 1) / robots.ore;
+            if minutes_needed < minutes_left {
+                let mut resources = resources.mine(robots, minutes_needed + 1);
+                resources.ore -= blueprint.ore_ore_cost;
+                let max = get_max_geodes(
+                    blueprint,
+                    &resources,
+                    &robots.add_ore(),
+                    minutes_left - minutes_needed - 1,
+                );
+                if max > max_so_far {
+                    max_so_far = max;
+                }
+            }
         }
     }
-    // Try building a clay robot if possible.
-    if resources.ore >= blueprint.clay_ore_cost && robots.clay <= robots.max_clay {
-        let mut resources = resources.mine(robots);
-        resources.ore -= blueprint.clay_ore_cost;
-        let max = get_max_geodes(blueprint, &resources, &robots.add_clay(), minutes_left - 1);
-        if max > max_so_far {
-            max_so_far = max;
+    // Try building a clay robot if useful.
+    if robots.clay < robots.max_clay {
+        if resources.ore >= blueprint.clay_ore_cost {
+            // No need for more mining, can just build immediately.
+            let mut resources = resources.mine(robots, 1);
+            resources.ore -= blueprint.clay_ore_cost;
+            let max = get_max_geodes(blueprint, &resources, &robots.add_clay(), minutes_left - 1);
+            if max > max_so_far {
+                max_so_far = max;
+            }
+        } else {
+            let extra_ore_needed = blueprint.clay_ore_cost - resources.ore;
+            let minutes_needed = (extra_ore_needed + robots.ore - 1) / robots.ore;
+            if minutes_needed < minutes_left {
+                let mut resources = resources.mine(robots, minutes_needed + 1);
+                resources.ore -= blueprint.clay_ore_cost;
+                let max = get_max_geodes(
+                    blueprint,
+                    &resources,
+                    &robots.add_clay(),
+                    minutes_left - minutes_needed - 1,
+                );
+                if max > max_so_far {
+                    max_so_far = max;
+                }
+            }
         }
     }
-    // Try building an obsidian robot if possible.
-    if resources.ore >= blueprint.obsidian_ore_cost
-        && resources.clay >= blueprint.obsidian_clay_cost
-        && robots.obsidian <= robots.max_obsidian
-    {
-        let mut resources = resources.mine(robots);
-        resources.ore -= blueprint.obsidian_ore_cost;
-        resources.clay -= blueprint.obsidian_clay_cost;
-        let max = get_max_geodes(
-            blueprint,
-            &resources,
-            &robots.add_obsidian(),
-            minutes_left - 1,
-        );
-        if max > max_so_far {
-            max_so_far = max;
+    // Try building an obsidian robot if possible and useful.
+    if robots.clay > 0 && robots.obsidian < robots.max_obsidian {
+        if resources.ore >= blueprint.clay_ore_cost
+            && resources.clay >= blueprint.obsidian_clay_cost
+        {
+            // No need for more mining, can just build immediately.
+            let mut resources = resources.mine(robots, 1);
+            resources.ore -= blueprint.obsidian_ore_cost;
+            resources.clay -= blueprint.obsidian_clay_cost;
+            let max = get_max_geodes(
+                blueprint,
+                &resources,
+                &robots.add_obsidian(),
+                minutes_left - 1,
+            );
+            if max > max_so_far {
+                max_so_far = max;
+            }
+        } else {
+            let extra_ore_needed = if blueprint.obsidian_ore_cost > resources.ore {
+                blueprint.obsidian_ore_cost - resources.ore
+            } else {
+                0
+            };
+            let extra_clay_needed = if blueprint.obsidian_clay_cost > resources.clay {
+                blueprint.obsidian_clay_cost - resources.clay
+            } else {
+                0
+            };
+            let minutes_needed = ((extra_ore_needed + robots.ore - 1) / robots.ore)
+                .max((extra_clay_needed + robots.clay - 1) / robots.clay);
+            if minutes_needed < minutes_left {
+                let mut resources = resources.mine(robots, minutes_needed + 1);
+                resources.ore -= blueprint.obsidian_ore_cost;
+                resources.clay -= blueprint.obsidian_clay_cost;
+                let max = get_max_geodes(
+                    blueprint,
+                    &resources,
+                    &robots.add_obsidian(),
+                    minutes_left - minutes_needed - 1,
+                );
+                if max > max_so_far {
+                    max_so_far = max;
+                }
+            }
         }
     }
     // Try building a geode robot if possible.
-    if resources.ore >= blueprint.geode_ore_cost
-        && resources.obsidian >= blueprint.geode_obsidian_cost
-    {
-        let mut resources = resources.mine(robots);
-        resources.ore -= blueprint.geode_ore_cost;
-        resources.obsidian -= blueprint.geode_obsidian_cost;
-        let max = get_max_geodes(blueprint, &resources, &robots.add_geode(), minutes_left - 1);
-        if max > max_so_far {
-            max_so_far = max;
+    if robots.obsidian > 0 {
+        if resources.ore >= blueprint.geode_ore_cost
+            && resources.obsidian >= blueprint.geode_obsidian_cost
+        {
+            // No need for more mining, can just build immediately.
+            let mut resources = resources.mine(robots, 1);
+            resources.ore -= blueprint.geode_ore_cost;
+            resources.obsidian -= blueprint.geode_obsidian_cost;
+            let max = get_max_geodes(blueprint, &resources, &robots.add_geode(), minutes_left - 1);
+            if max > max_so_far {
+                max_so_far = max;
+            }
+        } else {
+            let extra_ore_needed = if blueprint.geode_ore_cost > resources.ore {
+                blueprint.geode_ore_cost - resources.ore
+            } else {
+                0
+            };
+            let extra_obsidian_needed = if blueprint.geode_obsidian_cost > resources.obsidian {
+                blueprint.geode_obsidian_cost - resources.obsidian
+            } else {
+                0
+            };
+            let minutes_needed = ((extra_ore_needed + robots.ore - 1) / robots.ore)
+                .max((extra_obsidian_needed + robots.obsidian - 1) / robots.obsidian);
+            if minutes_needed < minutes_left {
+                let mut resources = resources.mine(robots, minutes_needed + 1);
+                resources.ore -= blueprint.geode_ore_cost;
+                resources.obsidian -= blueprint.geode_obsidian_cost;
+                let max = get_max_geodes(
+                    blueprint,
+                    &resources,
+                    &robots.add_geode(),
+                    minutes_left - minutes_needed - 1,
+                );
+                if max > max_so_far {
+                    max_so_far = max;
+                }
+            }
         }
     }
     max_so_far
@@ -183,6 +279,10 @@ fn main() -> eyre::Result<()> {
             24,
         );
         let quality = max_geodes * blueprint.id;
+        println!(
+            "Got max geodes of {max_geodes} for blueprint {0} giving quality {quality}",
+            blueprint.id
+        );
         sum += quality;
     }
     println!("Sum: {}", sum);
