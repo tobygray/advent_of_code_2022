@@ -157,7 +157,7 @@ fn get_max_geodes(
     }
     // Try building an obsidian robot if possible and useful.
     if robots.clay > 0 && robots.obsidian < robots.max_obsidian {
-        if resources.ore >= blueprint.clay_ore_cost
+        if resources.ore >= blueprint.obsidian_ore_cost
             && resources.clay >= blueprint.obsidian_clay_cost
         {
             // No need for more mining, can just build immediately.
