@@ -251,9 +251,12 @@ fn main() -> eyre::Result<()> {
     let mut blueprints = vec![];
     for line in io::stdin().lock().lines() {
         let line = line?;
-        blueprints.push(line_to_blueprint(&line)?)
+        blueprints.push(line_to_blueprint(&line)?);
+        if blueprints.len() >= 3 {
+            break;
+        }
     }
-    let mut sum = 0;
+    let mut product = 1;
     for blueprint in blueprints {
         let max_geodes = get_max_geodes(
             &blueprint,
@@ -276,15 +279,10 @@ fn main() -> eyre::Result<()> {
                 max_obsidian: blueprint.geode_obsidian_cost,
                 geodes: 0,
             },
-            24,
+            32,
         );
-        let quality = max_geodes * blueprint.id;
-        println!(
-            "Got max geodes of {max_geodes} for blueprint {0} giving quality {quality}",
-            blueprint.id
-        );
-        sum += quality;
+        product *= max_geodes;
     }
-    println!("Sum: {}", sum);
+    println!("Product: {}", product);
     Ok(())
 }
