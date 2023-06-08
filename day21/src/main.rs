@@ -4,9 +4,9 @@ use std::{
     io::{self, BufRead},
 };
 
-#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, PartialOrd, Clone)]
 enum Monkey {
-    Value(i64),
+    Value(f64),
     Plus(String, String),
     Minus(String, String),
     Multiply(String, String),
@@ -14,7 +14,7 @@ enum Monkey {
 }
 
 fn parse_op(op: &str) -> eyre::Result<Monkey> {
-    let val = op.parse::<i64>();
+    let val = op.parse::<f64>();
     if let Ok(number) = val {
         return Ok(Monkey::Value(number));
     }
@@ -37,8 +37,16 @@ fn parse_ln(line: &str) -> eyre::Result<(String, Monkey)> {
         return Err(eyre!("Unexpected line: {line}"));
     }
     let name = values[0];
-    let op = values[1];
-    Ok((name.to_owned(), parse_op(op)?))
+    if name == "root" {
+        let values: Vec<_> = values[1].split(' ').collect();
+        Ok((
+            name.to_owned(),
+            Monkey::Minus(values[0].to_owned(), values[2].to_owned()),
+        ))
+    } else {
+        let op = values[1];
+        Ok((name.to_owned(), parse_op(op)?))
+    }
 }
 
 fn main() -> eyre::Result<()> {
@@ -57,6 +65,34 @@ fn main() -> eyre::Result<()> {
             }
         }
     }
+    let mut lower_value = monkeys_with_values["humn"];
+    let mut upper_value = lower_value;
+    loop {
+        upper_value *= 2.0;
+        let value = get_value(monkeys_with_values.clone(), monkeys_without_values.clone(), upper_value )?;
+        if value > 0.0 {
+            lower_value = upper_value;
+        } else {
+            break;
+        }
+    }
+    println!("Value is between {lower_value} and {upper_value}");
+    loop {
+        let guess = (lower_value + upper_value) / 2.0;
+        let value = get_value(monkeys_with_values.clone(), monkeys_without_values.clone(), guess)?;
+        println!("Monkey value: {value:?} for {guess} between {lower_value} and {upper_value}");
+        if value == 0.0 {
+            break;
+        } else if value > 0.0 {
+            lower_value = guess;
+        } else {
+            upper_value = guess;
+        }
+    }
+    Ok(())
+}
+fn get_value(mut monkeys_with_values: BTreeMap<String, f64>, monkeys_without_values: Vec<(String, Monkey)>, humn: f64) -> eyre::Result<f64> {
+    monkeys_with_values.insert("humn".to_owned(), humn);
     while !monkeys_with_values.contains_key("root") {
         for (name, monkey) in monkeys_without_values.iter() {
             match monkey {
@@ -110,6 +146,5 @@ fn main() -> eyre::Result<()> {
             }
         }
     }
-    println!("Value: {:?}", monkeys_with_values["root"]);
-    Ok(())
+    Ok(monkeys_with_values["root"])
 }
