@@ -4,7 +4,6 @@ use regex::Regex;
 
 #[derive(Debug)]
 struct Blueprint {
-    id: u32,
     ore_ore_cost: u32,
     clay_ore_cost: u32,
     obsidian_ore_cost: u32,
@@ -18,7 +17,6 @@ fn line_to_blueprint(line: &str) -> eyre::Result<Blueprint> {
     let mut match_result = line_match.captures_iter(line);
     if let Some(cap) = match_result.next() {
         Ok(Blueprint {
-            id: cap[1].parse()?,
             ore_ore_cost: cap[2].parse()?,
             clay_ore_cost: cap[3].parse()?,
             obsidian_ore_cost: cap[4].parse()?,
